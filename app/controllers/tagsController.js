@@ -1,25 +1,25 @@
-const Category = require("../models/Category");
+const Tag = require("../models/Tag");
 
 const index = async (req, res, next) => {
   try {
     const { page = 1, size = 10 } = req.query;
     // console.log(page);
-    const category = await Category.find()
+    const tag = await Tag.find()
       .sort({ updatedAt: -1, createdAt: -1 })
       .limit(parseInt(size) * 1)
       .skip((parseInt(page) - 1) * parseInt(size));
 
-    if (category.length > 0) {
+    if (tag.length > 0) {
       return res.status(200).send({
         status: 200,
-        messages: "List Category",
-        totalData: category.length,
-        data: category,
+        messages: "List Tag",
+        totalData: tag.length,
+        data: tag,
       });
     } else {
       return res.status(200).send({
         status: 200,
-        messages: "List Category Kosong",
+        messages: "List Tag Kosong",
         totalData: 0,
         data: null,
       });
@@ -36,22 +36,22 @@ const index = async (req, res, next) => {
   }
 };
 
-// Get Category
+// Get Tag
 const get = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
-    // console.log(category);
+    const tag = await Tag.findById(req.params.id);
+    // console.log(Tag);
 
-    if (category) {
+    if (tag) {
       return res.status(200).send({
         status: 200,
-        messages: "Category Detail",
-        data: category,
+        messages: "Tag Detail",
+        data: tag,
       });
     } else {
       return res.status(404).send({
         status: 404,
-        messages: "Category Tidak ada",
+        messages: "Tag Tidak ada",
         data: null,
       });
     }
@@ -63,16 +63,16 @@ const get = async (req, res) => {
   }
 };
 
-// destroy Category
+// destroy Tag
 const destroy = async (req, res, next) => {
   const { id } = req.body;
   //   console.log(req.body)
   try {
-    let category = await Category.findOneAndDelete({ _id: id });
-    // console.log(category);
+    let tag = await Tag.findOneAndDelete({ _id: id });
+    // console.log(Tag);
     return res.status(200).send({
       status: 200,
-      messages: "Category Deleted",
+      messages: "Tag Deleted",
       data: null,
     });
   } catch (error) {
@@ -92,25 +92,25 @@ const createOrUpdate = (req, res, next) => {
   }
 };
 
-// Update Category
+// Update Tag
 const update = async (req, res, next) => {
   try {
-    let category = await Category.findOneAndUpdate(
+    let tag = await Tag.findOneAndUpdate(
       { _id: req.body.id },
       {name: req.body.name},
       { new: true, runValidators: true }
     );
-    // console.log(category)
-    if (!category) {
+    // console.log(Tag)
+    if (!tag) {
       return res.json({
         error: 404,
-        message: "Category Not Found",
+        message: "Tag Not Found",
       });
     }
     return res.status(200).send({
       status: 200,
-      messages: "Category Updated",
-      data: category,
+      messages: "Tag Updated",
+      data: tag,
     });
   } catch (error) {
     // console.log(error);
@@ -127,17 +127,17 @@ const update = async (req, res, next) => {
   }
 };
 
-// Create Category
+// Create Tag
 const store = async (req, res, next) => {
   try {
-    let category = new Category(req.body);
+    let tag = new Tag(req.body);
 
-    await category.save();
+    await tag.save();
 
     return res.status(201).send({
       status: 201,
-      messages: "Category Created",
-      data: category,
+      messages: "Tag Created",
+      data: tag,
     });
   } catch (error) {
     //   console.log(error);

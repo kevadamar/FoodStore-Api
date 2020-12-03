@@ -1,6 +1,5 @@
 const routes = require("express").Router();
 const multer = require('multer')
-const os = require("os");
 
 const categoriesController = require('../../controllers/categoriesController')
 

@@ -1,12 +1,14 @@
 const routesApp = require("express")();
 
 const productRouter = require("./products");
-const categoryRouter = require('./categories')
-
+const categoryRouter = require("./categories");
+const tagRouter = require("./tags");
 // Routes CRUD product
 routesApp.use("/api", productRouter);
 // Routes CRUD category
-routesApp.use('/api',categoryRouter);
+routesApp.use("/api", categoryRouter);
+// Routes CRUD tag
+routesApp.use("/api", tagRouter);
 
 // page not found
 const routeNotFound = (req, res, next) => {
