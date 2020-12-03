@@ -8,7 +8,7 @@ const { errField } = require("../helpers");
 const index = async (req, res, next) => {
   try {
     const { page = 1, size = 10 } = req.query;
-    console.log(page);
+    // console.log(page);
     const products = await Product.find()
       .select("_id name price stock status image_url createdAt")
       .sort({ updatedAt: -1, createdAt: -1 })
@@ -16,14 +16,14 @@ const index = async (req, res, next) => {
       .skip((parseInt(page) - 1) * parseInt(size));
 
     if (products.length > 0) {
-      res.status(200).send({
+      return res.status(200).send({
         status: 200,
         messages: "List Products",
         totalData: products.length,
         data: products,
       });
     } else {
-      res.status(200).send({
+      return res.status(200).send({
         status: 200,
         messages: "List Products Kosong",
         totalData: 0,
@@ -31,14 +31,13 @@ const index = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).send({
+    // console.log(error);
+    return res.status(500).send({
       status: 500,
       messages: "Internal Server Error",
       totalData: 0,
       data: null,
     });
-    next(error);
   }
 };
 
@@ -51,20 +50,54 @@ const get = async (req, res) => {
     // console.log(product);
 
     if (product) {
-      res.status(200).send({
+      return res.status(200).send({
         status: 200,
         messages: "Product Detail",
         data: product,
       });
     } else {
-      res.status(404).send({
+      return res.status(404).send({
         status: 404,
         messages: "Product Tidak ada",
         data: null,
       });
     }
   } catch (error) {
-    res.status(500).send({
+    return res.status(500).send({
+      status: 500,
+      messages: "Internal Server Error",
+    });
+  }
+};
+
+// destroy Product
+const destroy = async (req, res, next) => {
+  const { id } = req.body;
+  //   console.log(req.body)
+  try {
+    let product = await Product.findOneAndDelete({ _id: id });
+
+    if (!product) {
+      return res.status(404).send({
+        status: 404,
+        messages: "Product Not Found",
+      });
+    }
+
+    let currentImage = `${pathConfig.rootPath}/public/uploads/${product.image_url}`;
+
+    if (fs.existsSync(currentImage)) {
+      fs.unlinkSync(currentImage);
+    }
+
+    return res.status(200).send({
+      status: 200,
+      messages: "Product Deleted",
+      data: null,
+    });
+  } catch (error) {
+    // console.log("error : ", error);
+    return res.status(500).send({
       status: 500,
       messages: "Internal Server Error",
     });
@@ -76,34 +109,6 @@ const createOrUpdate = (req, res, next) => {
     update(req, res, next);
   } else {
     store(req, res, next);
-  }
-};
-
-// destroy Product
-const destroy = async (req, res, next) => {
-  const { id } = req.body;
-  //   console.log(req.body)
-  try {
-    let product = await Product.findOneAndDelete({ _id: id });
-
-    let currentImage = `${pathConfig.rootPath}/public/uploads/${product.image_url}`;
-
-    if (fs.existsSync(currentImage)) {
-      fs.unlinkSync(currentImage);
-    }
-
-    res.status(200).send({
-      status: 200,
-      messages: "Product Deleted",
-      data: null,
-    });
-  } catch (error) {
-    // console.log("error : ", error);
-    res.send({
-      status: 400,
-      messages: error.message,
-    });
-    next(error);
   }
 };
 
@@ -128,7 +133,7 @@ const store = async (req, res, next) => {
 
       src.on("end", async () => {
         const product = new Product({ ...req.body, image_url: filename });
-        console.log("with image");
+        // console.log("with image");
         await product.save();
 
         res.status(201).send({
@@ -142,7 +147,7 @@ const store = async (req, res, next) => {
       });
     } else {
       const product = new Product(req.body);
-      console.log("no image");
+      // console.log("no image");
       await product.save();
 
       res.status(201).send({
@@ -190,10 +195,9 @@ const update = async (req, res, next) => {
       src.on("end", async () => {
         let product = await Product.findOne({ _id: id });
         if (!product) {
-          // console.log("error : ",product)
-          return res.json({
-            error: 404,
-            message: "Product Not Found",
+          return res.status(404).send({
+            status: 404,
+            messages: "Product Not Found",
           });
         }
         let currentImage = `${pathConfig.rootPath}/public/uploads/${product.image_url}`;
