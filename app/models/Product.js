@@ -29,6 +29,10 @@ const productSchema = Schema({
   status: {
     type: Boolean,
     default: true,
+  },
+  category:{
+    type: Schema.Types.ObjectId,
+    ref: "Category"
   }
 },{timestamps: true});
 

@@ -3,6 +3,8 @@ const path = require("path");
 const pathConfig = require("../config");
 const Product = require("../models/Product");
 const { errField } = require("../helpers");
+const Category = require("../models/Category");
+const mongoose = require("mongoose");
 
 // index Products
 const index = async (req, res, next) => {
@@ -13,7 +15,8 @@ const index = async (req, res, next) => {
       .select("_id name price stock status image_url createdAt")
       .sort({ updatedAt: -1, createdAt: -1 })
       .limit(parseInt(size) * 1)
-      .skip((parseInt(page) - 1) * parseInt(size));
+      .skip((parseInt(page) - 1) * parseInt(size))
+      .populate("category");
 
     if (products.length > 0) {
       return res.status(200).send({
@@ -46,7 +49,7 @@ const get = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).populate("category");
     // console.log(product);
 
     if (product) {
@@ -115,6 +118,27 @@ const createOrUpdate = (req, res, next) => {
 // store Product
 const store = async (req, res, next) => {
   try {
+    let payload = req.body;
+
+    if (payload.category_id) {
+      let category = await Category.findById(mongoose.Types.ObjectId(payload.category_id));
+      // console.log(typeof payload.category_id)
+      if (category) {
+        payload = {...payload,category:category._id}
+      } else {
+        return res.status(404).json({
+          error: 404,
+          message: "category Not Found",
+        });
+      }
+
+    } else {
+      return res.status(404).json({
+        error: 404,
+        message: "category_id is required",
+      });
+    }
+
     if (req.file) {
       let tmp_data = req.file.path;
       let originalExt = req.file.originalname.split(".")[
@@ -132,7 +156,7 @@ const store = async (req, res, next) => {
       src.pipe(dest);
 
       src.on("end", async () => {
-        const product = new Product({ ...req.body, image_url: filename });
+        const product = new Product({ ...payload, image_url: filename });
         // console.log("with image");
         await product.save();
 
@@ -146,7 +170,7 @@ const store = async (req, res, next) => {
         next(err);
       });
     } else {
-      const product = new Product(req.body);
+      const product = new Product(payload);
       // console.log("no image");
       await product.save();
 
@@ -157,11 +181,11 @@ const store = async (req, res, next) => {
       });
     }
   } catch (error) {
-    // console.log("error:" ,error);
+    console.log("error:" ,error);
     if (error && error.name === "ValidationError") {
       const errorField = errField(error);
 
-      return res.json({
+      return res.status(404).json({
         error: 404,
         message: error.message,
         fields: errorField,
@@ -173,9 +197,30 @@ const store = async (req, res, next) => {
 
 // Update Product
 const update = async (req, res, next) => {
-  const { id } = req.body;
-
+  
   try {
+    const { id } = req.body;
+    let payload = req.body;
+
+    if (payload.category_id) {
+      let category = await Category.findById(mongoose.Types.ObjectId(payload.category_id));
+      // console.log(typeof payload.category_id)
+      if (category) {
+        payload = {...payload,category:category._id}
+      } else {
+        return res.status(404).json({
+          error: 404,
+          message: "category Not Found",
+        });
+      }
+
+    } else {
+      return res.status(404).json({
+        error: 404,
+        message: "category_id is required",
+      });
+    }
+
     if (req.file) {
       let tmp_data = req.file.path;
       let originalExt = req.file.originalname.split(".")[
@@ -207,7 +252,7 @@ const update = async (req, res, next) => {
 
         product = await Product.findOneAndUpdate(
           { _id: id },
-          { ...req.body, image_url: filename },
+          { ...payload, image_url: filename },
           { new: true, runValidators: true }
         );
         // console.log("error : ", product);
@@ -219,7 +264,7 @@ const update = async (req, res, next) => {
         });
       });
     } else {
-      const product = await Product.findOneAndUpdate({ _id: id }, req.body, {
+      const product = await Product.findOneAndUpdate({ _id: id }, payload, {
         new: true,
         runValidators: true,
       });
@@ -237,7 +282,7 @@ const update = async (req, res, next) => {
     if (error && error.name === "ValidationError") {
       const errorField = errField(error);
 
-      return res.json({
+      return res.status(404).json({
         error: 404,
         message: error.message,
         fields: errorField,
