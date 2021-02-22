@@ -3,6 +3,10 @@ const routesApp = require("express")();
 const productRouter = require("./products");
 const categoryRouter = require("./categories");
 const tagRouter = require("./tags");
+const authRouter = require("./auth");
+
+//Routes AUTH
+routesApp.use("/api", authRouter);
 // Routes CRUD product
 routesApp.use("/api", productRouter);
 // Routes CRUD category

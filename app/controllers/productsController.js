@@ -6,12 +6,13 @@ const { errField } = require("../helpers");
 const Category = require("../models/Category");
 const mongoose = require("mongoose");
 const Tag = require("../models/Tag");
+const User = require("../models/User");
 
 // index Products
 const index = async (req, res, next) => {
   try {
     let { page = 1, size = 10, q = "", category = "", tags = [] } = req.query;
-    // console.log(page);
+
     let criteria = {};
     if (q.length) {
       criteria = {
@@ -35,13 +36,13 @@ const index = async (req, res, next) => {
 
     if (tags.length) {
       tags = await Tag.find({ name: { $in: tags } });
-      console.log(tags)
+      // console.log(tags)
       criteria = {
         ...criteria,
         tags: { $in: tags.map((tag) => tag._id) },
       };
     }
-    console.log(criteria);
+    // console.log(criteria);
     const products = await Product.find(criteria)
       .select("_id name price stock status image_url createdAt")
       .sort({ updatedAt: -1, createdAt: -1 })

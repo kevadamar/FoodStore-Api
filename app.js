@@ -4,6 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const routesApp = require('./app/routes');
+const { decodeToken } = require('./app/middleware.js/authMiddleware');
 
 var app = express();
 
@@ -24,6 +25,9 @@ const log = (req, res, next) => {
 };
 
 app.use(log);
+
+// middleware
+app.use(decodeToken())
 
 // api routes
 app.use(routesApp);
