@@ -95,12 +95,12 @@ const createOrUpdate = (req, res, next) => {
 // Update Tag
 const update = async (req, res, next) => {
   try {
+    
     let tag = await Tag.findOneAndUpdate(
       { _id: req.body.id },
-      {name: req.body.name},
+      {name: `${req.body.name}`},
       { new: true, runValidators: true }
     );
-    // console.log(Tag)
     if (!tag) {
       return res.json({
         error: 404,

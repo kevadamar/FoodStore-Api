@@ -5,18 +5,49 @@ const Product = require("../models/Product");
 const { errField } = require("../helpers");
 const Category = require("../models/Category");
 const mongoose = require("mongoose");
+const Tag = require("../models/Tag");
 
 // index Products
 const index = async (req, res, next) => {
   try {
-    const { page = 1, size = 10 } = req.query;
+    let { page = 1, size = 10, q = "", category = "", tags = [] } = req.query;
     // console.log(page);
-    const products = await Product.find()
+    let criteria = {};
+    if (q.length) {
+      criteria = {
+        ...criteria,
+        name: { $regex: `${q}`, $options: "i" },
+      };
+    }
+
+    if (category.length) {
+      category = await Category.findOne({
+        name: { $regex: `${category}`, $options: "i" },
+      });
+
+      if (category) {
+        criteria = {
+          ...criteria,
+          category: category._id,
+        };
+      }
+    }
+
+    if (tags.length) {
+      tags = await Tag.find({ name: { $in: tags } });
+      console.log(tags)
+      criteria = {
+        ...criteria,
+        tags: { $in: tags.map((tag) => tag._id) },
+      };
+    }
+    console.log(criteria);
+    const products = await Product.find(criteria)
       .select("_id name price stock status image_url createdAt")
       .sort({ updatedAt: -1, createdAt: -1 })
       .limit(parseInt(size) * 1)
       .skip((parseInt(page) - 1) * parseInt(size))
-      .populate("category");
+      .populate("category tags");
 
     if (products.length > 0) {
       return res.status(200).send({
@@ -34,7 +65,7 @@ const index = async (req, res, next) => {
       });
     }
   } catch (error) {
-    // console.log(error);
+    console.log(error);
     return res.status(500).send({
       status: 500,
       messages: "Internal Server Error",
@@ -49,7 +80,9 @@ const get = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const product = await Product.findById(id).populate("category");
+    const product = await Product.findById(id)
+      .populate("category")
+      .populate("tags");
     // console.log(product);
 
     if (product) {
@@ -121,21 +154,42 @@ const store = async (req, res, next) => {
     let payload = req.body;
 
     if (payload.category_id) {
-      let category = await Category.findById(mongoose.Types.ObjectId(payload.category_id));
+      let category = await Category.findById(
+        mongoose.Types.ObjectId(payload.category_id)
+      );
       // console.log(typeof payload.category_id)
       if (category) {
-        payload = {...payload,category:category._id}
+        payload = { ...payload, category: category._id };
       } else {
         return res.status(404).json({
           error: 404,
-          message: "category Not Found",
+          message: "Category Not Found",
         });
       }
-
     } else {
       return res.status(404).json({
         error: 404,
         message: "category_id is required",
+      });
+    }
+
+    if (payload.tag_id && payload.tag_id.length) {
+      let tags = await Tag.find({ _id: { $in: payload.tag_id } });
+      if (tags.length) {
+        payload = {
+          ...payload,
+          tag: tags.map((tag) => mongoose.Types.ObjectId(tag._id)),
+        };
+      } else {
+        return res.status(404).json({
+          error: 404,
+          message: "Tag Not Found",
+        });
+      }
+    } else {
+      return res.status(404).json({
+        error: 404,
+        message: "tag_id is required",
       });
     }
 
@@ -181,7 +235,7 @@ const store = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.log("error:" ,error);
+    console.log("error:", error);
     if (error && error.name === "ValidationError") {
       const errorField = errField(error);
 
@@ -197,28 +251,39 @@ const store = async (req, res, next) => {
 
 // Update Product
 const update = async (req, res, next) => {
-  
   try {
     const { id } = req.body;
     let payload = req.body;
 
     if (payload.category_id) {
-      let category = await Category.findById(mongoose.Types.ObjectId(payload.category_id));
+      let category = await Category.findById(
+        mongoose.Types.ObjectId(payload.category_id)
+      );
       // console.log(typeof payload.category_id)
       if (category) {
-        payload = {...payload,category:category._id}
+        payload = { ...payload, category: category._id };
       } else {
         return res.status(404).json({
           error: 404,
           message: "category Not Found",
         });
       }
+    }
 
-    } else {
-      return res.status(404).json({
-        error: 404,
-        message: "category_id is required",
-      });
+    if (payload.tag_id && payload.tag_id.length) {
+      // console.log(tag_id)
+      let tags = await Tag.find({ _id: { $in: payload.tag_id } });
+      if (tags.length) {
+        payload = {
+          ...payload,
+          tags: tags.map((tag) => tag._id),
+        };
+      } else {
+        return res.status(404).json({
+          error: 404,
+          message: "Tag Not Found",
+        });
+      }
     }
 
     if (req.file) {
@@ -291,6 +356,10 @@ const update = async (req, res, next) => {
     next(error);
   }
 };
+
+// function Helper internal product
+
+const checkData = (table = "") => {};
 
 module.exports = {
   index,

@@ -12,4 +12,4 @@ const tagSchema = Schema(
   { timestamps: true }
 );
 
-module.exports = model("Tag", tagSchema);
+module.exports = model("Tags", tagSchema);
