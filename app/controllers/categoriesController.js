@@ -1,4 +1,5 @@
 const Category = require("../models/Category");
+const { policyFor } = require("../policy");
 
 const index = async (req, res, next) => {
   try {
@@ -65,9 +66,17 @@ const get = async (req, res) => {
 
 // destroy Category
 const destroy = async (req, res, next) => {
-  const { id } = req.body;
-  //   console.log(req.body)
   try {
+    const { id } = req.body;
+    let policy = policyFor(req.user);
+
+    if (!policy.can("delete", "Category")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses menghapus kategori",
+      });
+    }
+
     let category = await Category.findOneAndDelete({ _id: id });
     // console.log(category);
     return res.status(200).send({
@@ -95,9 +104,18 @@ const createOrUpdate = (req, res, next) => {
 // Update Category
 const update = async (req, res, next) => {
   try {
+    let policy = policyFor(req.user);
+
+    if (!policy.can("update", "Category")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses update kategori",
+      });
+    }
+
     let category = await Category.findOneAndUpdate(
       { _id: req.body.id },
-      {name: req.body.name},
+      { name: req.body.name },
       { new: true, runValidators: true }
     );
     // console.log(category)
@@ -130,7 +148,16 @@ const update = async (req, res, next) => {
 // Create Category
 const store = async (req, res, next) => {
   try {
-    let category = new Category(req.body);
+    let { body, user } = req;
+    let category = new Category(body);
+    let policy = policyFor(user);
+
+    if (!policy.can("create", "Category")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses membuat kategori",
+      });
+    }
 
     await category.save();
 

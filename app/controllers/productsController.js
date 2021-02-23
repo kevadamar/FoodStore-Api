@@ -7,6 +7,7 @@ const Category = require("../models/Category");
 const mongoose = require("mongoose");
 const Tag = require("../models/Tag");
 const User = require("../models/User");
+const { policyFor } = require("../policy");
 
 // index Products
 const index = async (req, res, next) => {
@@ -109,11 +110,20 @@ const get = async (req, res) => {
 
 // destroy Product
 const destroy = async (req, res, next) => {
-  const { id } = req.body;
-  //   console.log(req.body)
   try {
-    let product = await Product.findOneAndDelete({ _id: id });
+    let { body, user } = req;
+    let policy = policyFor(user);
+    const { id } = body;
 
+    if (!policy.can("delete", "Product")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses menghapus product",
+      });
+    }
+
+    let product = await Product.findOneAndDelete({ _id: id });
+    
     if (!product) {
       return res.status(404).send({
         status: 404,
@@ -152,7 +162,16 @@ const createOrUpdate = (req, res, next) => {
 // store Product
 const store = async (req, res, next) => {
   try {
-    let payload = req.body;
+    let { body: payload, user } = req;
+
+    let policy = policyFor(user);
+
+    if (!policy.can("create", "Product")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses membuat product",
+      });
+    }
 
     if (payload.category_id) {
       let category = await Category.findById(
@@ -179,7 +198,7 @@ const store = async (req, res, next) => {
       if (tags.length) {
         payload = {
           ...payload,
-          tag: tags.map((tag) => mongoose.Types.ObjectId(tag._id)),
+          tags: tags.map((tag) => mongoose.Types.ObjectId(tag._id)),
         };
       } else {
         return res.status(404).json({
@@ -253,8 +272,16 @@ const store = async (req, res, next) => {
 // Update Product
 const update = async (req, res, next) => {
   try {
-    const { id } = req.body;
-    let payload = req.body;
+    let { body: payload, user } = req;
+    let policy = policyFor(user);
+    const { id } = payload;
+
+    if (!policy.can("update", "Product")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses update product",
+      });
+    }
 
     if (payload.category_id) {
       let category = await Category.findById(
@@ -357,10 +384,6 @@ const update = async (req, res, next) => {
     next(error);
   }
 };
-
-// function Helper internal product
-
-const checkData = (table = "") => {};
 
 module.exports = {
   index,

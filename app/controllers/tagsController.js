@@ -1,4 +1,5 @@
 const Tag = require("../models/Tag");
+const { policyFor } = require("../policy");
 
 const index = async (req, res, next) => {
   try {
@@ -65,9 +66,16 @@ const get = async (req, res) => {
 
 // destroy Tag
 const destroy = async (req, res, next) => {
-  const { id } = req.body;
-  //   console.log(req.body)
   try {
+    const { id } = req.body;
+    let policy = policyFor(req.user);
+
+    if (!policy.can("delete", "Tag")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses menghapus tag",
+      });
+    }
     let tag = await Tag.findOneAndDelete({ _id: id });
     // console.log(Tag);
     return res.status(200).send({
@@ -76,7 +84,7 @@ const destroy = async (req, res, next) => {
       data: null,
     });
   } catch (error) {
-    // console.log("error : ", error);
+    console.log("error : ", error);
     return res.status(500).send({
       status: 500,
       messages: "Internal Server Error",
@@ -95,10 +103,17 @@ const createOrUpdate = (req, res, next) => {
 // Update Tag
 const update = async (req, res, next) => {
   try {
-    
+    let policy = policyFor(req.user);
+
+    if (!policy.can("update", "Tag")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses update tag",
+      });
+    }
     let tag = await Tag.findOneAndUpdate(
       { _id: req.body.id },
-      {name: `${req.body.name}`},
+      { name: `${req.body.name}` },
       { new: true, runValidators: true }
     );
     if (!tag) {
@@ -130,7 +145,18 @@ const update = async (req, res, next) => {
 // Create Tag
 const store = async (req, res, next) => {
   try {
-    let tag = new Tag(req.body);
+    let { body, user } = req;
+
+    let policy = policyFor(user);
+
+    if (!policy.can("create", "Tag")) {
+      return res.status(400).json({
+        error: 1,
+        message: "User tidak memiliki akses membuat tag",
+      });
+    }
+
+    let tag = new Tag(body);
 
     await tag.save();
 
