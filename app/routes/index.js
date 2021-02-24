@@ -4,6 +4,7 @@ const productRouter = require("./products");
 const categoryRouter = require("./categories");
 const tagRouter = require("./tags");
 const authRouter = require("./auth");
+const regionsRouter = require("./regions");
 
 //Routes AUTH
 routesApp.use("/api", authRouter);
@@ -13,6 +14,8 @@ routesApp.use("/api", productRouter);
 routesApp.use("/api", categoryRouter);
 // Routes CRUD tag
 routesApp.use("/api", tagRouter);
+// Routes GET REGIONS
+routesApp.use("/api", regionsRouter)
 
 // page not found
 const routeNotFound = (req, res, next) => {
